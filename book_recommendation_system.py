@@ -302,7 +302,7 @@ def calculate_weighted_similarity(query_emb, book_emb, likert_scores):
     
     # Score pondéré : 80% similarité + 20% intensité préférences
     weighted_score = 0.8 * base_similarity + 0.2 * avg_intensity
-    
+    print(f"[EF3.1] Score pondéré : {weighted_score}")
     return weighted_score
 
 
