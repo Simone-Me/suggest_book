@@ -224,6 +224,48 @@ def recommend():
         # Générer la synthèse GenAI
         summary = generate_genai_summary(preferences, recommendations, query_text)
         
+        # Sauvegarder les préférences utilisateur (historique)
+        import json
+        preferences_history = []
+        if os.path.exists('user_preferences.json'):
+            try:
+                with open('user_preferences.json', 'r', encoding='utf-8') as f:
+                    preferences_history = json.load(f)
+                    if not isinstance(preferences_history, list):
+                        preferences_history = [preferences_history]
+            except:
+                preferences_history = []
+        
+        preferences_history.append(preferences)
+        
+        with open('user_preferences.json', 'w', encoding='utf-8') as f:
+            json.dump(preferences_history, f, indent=2, ensure_ascii=False)
+        
+        # Sauvegarder les résultats complets (historique)
+        results_history = []
+        if os.path.exists('recommendation_results.json'):
+            try:
+                with open('recommendation_results.json', 'r', encoding='utf-8') as f:
+                    results_history = json.load(f)
+                    if not isinstance(results_history, list):
+                        results_history = [results_history]
+            except:
+                results_history = []
+        
+        current_result = {
+            'preferences': preferences,
+            'recommendations': recommendations,
+            'summary': summary,
+            'query_text': query_text,
+            'timestamp': datetime.now().isoformat()
+        }
+        results_history.append(current_result)
+        
+        with open('recommendation_results.json', 'w', encoding='utf-8') as f:
+            json.dump(results_history, f, indent=2, ensure_ascii=False)
+        
+        print(f"[OK] Fichiers JSON sauvegardés (session #{len(results_history)}) - {datetime.now().strftime('%H:%M:%S')}")
+        
         return jsonify({
             'success': True,
             'recommendations': recommendations,

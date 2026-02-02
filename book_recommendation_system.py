@@ -374,7 +374,7 @@ def generate_personalized_summary(preferences, recommendations, query_text, api_
         # Préparer le contexte
         top_book = recommendations[0]
         
-        prompt = f"""Tu es un conseiller littéraire. Analyse ce profil et recommande le livre.
+        prompt = f"""Tu es un conseiller littéraire. Analyse ce profil 
 
 PROFIL : {query_text}
 
@@ -382,7 +382,7 @@ LIVRE : {top_book['title']} ({top_book['genre']})
 {top_book['description'][:200]}
 
 TÂCHE (120 mots max) :
-1. Pourquoi ce livre correspond (3 phrases)
+1. Pourquoi le premier livre de la liste correspond(mentionne son nom, 3 phrases)
 2. 2 aspects clés couverts
 3. Suggestion de 2 livres similaires
   
