@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -12,8 +12,12 @@
       }
 
       body {
-        font-family: "Inter", "Segoe UI", -apple-system, sans-serif;
-        background: url('/static/image1.jpg') center/cover fixed;
+        font-family:
+          "Inter",
+          "Segoe UI",
+          -apple-system,
+          sans-serif;
+        background: url("/static/image1.jpg") center/cover fixed;
         min-height: 100vh;
         padding: 20px;
         display: flex;
@@ -33,7 +37,7 @@
       }
 
       h1 {
-        color: #F45F7C;
+        color: #f45f7c;
         text-align: center;
         margin-bottom: 8px;
         font-size: 2.5em;
@@ -43,7 +47,7 @@
 
       .subtitle {
         text-align: center;
-        color: #8591C3;
+        color: #8591c3;
         margin-bottom: 40px;
         font-size: 0.95em;
         font-weight: 500;
@@ -54,7 +58,7 @@
       }
 
       .section-title {
-        color: #8591C3;
+        color: #8591c3;
         font-size: 1.1em;
         font-weight: 600;
         margin-bottom: 20px;
@@ -89,7 +93,7 @@
       input[type="text"]:focus,
       textarea:focus {
         outline: none;
-        border-color: #8591C3;
+        border-color: #8591c3;
         background: white;
         box-shadow: 0 0 0 3px rgba(133, 145, 195, 0.1);
       }
@@ -140,7 +144,7 @@
       }
 
       .likert-option input[type="radio"]:checked + label {
-        background: linear-gradient(135deg, #8591C3 0%, #F45F7C 100%);
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
         color: white;
         border-color: transparent;
         transform: translateY(-2px);
@@ -148,7 +152,7 @@
       }
 
       .likert-option label:hover {
-        border-color: #8591C3;
+        border-color: #8591c3;
         background: white;
       }
 
@@ -157,14 +161,14 @@
         justify-content: space-between;
         margin-top: 10px;
         font-size: 0.82em;
-        color: #8591C3;
+        color: #8591c3;
         font-weight: 500;
       }
 
       button {
         width: 100%;
         padding: 18px;
-        background: linear-gradient(135deg, #8591C3 0%, #F45F7C 100%);
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
         color: white;
         border: none;
         border-radius: 14px;
@@ -197,15 +201,19 @@
       }
 
       .summary-box {
-        background: linear-gradient(135deg, rgba(133, 145, 195, 0.08) 0%, rgba(244, 95, 124, 0.08) 100%);
+        background: linear-gradient(
+          135deg,
+          rgba(133, 145, 195, 0.08) 0%,
+          rgba(244, 95, 124, 0.08) 100%
+        );
         padding: 28px;
         border-radius: 16px;
         margin-bottom: 40px;
-        border-left: 4px solid #F45F7C;
+        border-left: 4px solid #f45f7c;
       }
 
       .summary-title {
-        color: #F45F7C;
+        color: #f45f7c;
         font-size: 1.25em;
         margin-bottom: 14px;
         font-weight: 700;
@@ -216,94 +224,304 @@
         color: #2d3748;
       }
 
+      /* Comparatif des scores (barres) */
+      .score-bars-caption {
+        color: #4a5568;
+        font-size: 0.82em;
+        line-height: 1.5;
+        margin-bottom: 14px;
+      }
+
+      .score-bars-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-left: 170px;
+        margin-right: 58px;
+        margin-bottom: 4px;
+        font-size: 0.7em;
+        color: #8591c3;
+        font-weight: 600;
+      }
+
+      .score-bars {
+        margin-bottom: 24px;
+      }
+
+      .score-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-size: 0.85em;
+      }
+
+      .score-bar-label {
+        width: 160px;
+        flex-shrink: 0;
+        color: #2d3748;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .score-bar-sublabel {
+        color: #8591c3;
+        font-weight: 500;
+        font-size: 0.85em;
+      }
+
+      .score-bar-track {
+        flex: 1;
+        background: #f0f1f6;
+        border-radius: 8px;
+        height: 16px;
+        overflow: hidden;
+      }
+
+      .score-bar-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
+        border-radius: 8px;
+        transition: width 0.6s ease;
+      }
+
+      .score-bar-value {
+        width: 48px;
+        flex-shrink: 0;
+        text-align: right;
+        color: #f45f7c;
+        font-weight: 700;
+      }
+
+      /* Carte livre compacte */
       .book-card {
         background: white;
         border: 1px solid #e8eaf0;
-        border-radius: 16px;
-        padding: 28px;
-        margin-bottom: 20px;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 14px;
         transition: all 0.3s ease;
       }
 
       .book-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-3px);
         box-shadow: 0 8px 24px rgba(133, 145, 195, 0.15);
-        border-color: #8591C3;
+        border-color: #8591c3;
+      }
+
+      .book-card-header {
+        display: flex;
+        gap: 14px;
+      }
+
+      .book-cover {
+        width: 70px;
+        height: 105px;
+        flex-shrink: 0;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em;
+        overflow: hidden;
+      }
+
+      .book-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .book-main {
+        flex: 1;
+        min-width: 0;
       }
 
       .book-rank {
         display: inline-block;
-        background: linear-gradient(135deg, #8591C3 0%, #F45F7C 100%);
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
         color: white;
-        padding: 6px 18px;
+        padding: 3px 12px;
         border-radius: 20px;
         font-weight: 700;
-        margin-bottom: 12px;
-        font-size: 0.9em;
+        margin-bottom: 6px;
+        font-size: 0.75em;
       }
 
       .book-title {
         color: #1a202c;
-        font-size: 1.4em;
+        font-size: 1.1em;
         font-weight: 700;
-        margin-bottom: 10px;
-        line-height: 1.3;
+        margin-bottom: 4px;
+        line-height: 1.25;
+      }
+
+      .book-author {
+        color: #4a5568;
+        font-style: italic;
+        margin-bottom: 4px;
+        font-size: 0.85em;
       }
 
       .book-genre {
-        color: #8591C3;
+        color: #8591c3;
         font-weight: 600;
-        margin-bottom: 8px;
-        font-size: 0.95em;
+        margin-bottom: 4px;
+        font-size: 0.85em;
+      }
+
+      .book-meta {
+        color: #8591c3;
+        margin-bottom: 4px;
+        font-size: 0.75em;
       }
 
       .book-score {
-        color: #F45F7C;
+        color: #f45f7c;
         font-weight: 600;
-        margin-bottom: 14px;
-        font-size: 0.95em;
+        font-size: 0.85em;
+      }
+
+      .book-links {
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .book-links a {
+        font-size: 0.72em;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #f0f1f6;
+        color: #4a5568;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+      }
+
+      .book-links a:hover {
+        background: #8591c3;
+        color: white;
+      }
+
+      .book-details {
+        margin-top: 10px;
+        display: none;
+      }
+
+      .book-details.expanded {
+        display: block;
       }
 
       .book-description {
         color: #4a5568;
-        line-height: 1.7;
-        font-size: 0.95em;
+        line-height: 1.6;
+        font-size: 0.85em;
+        margin-bottom: 10px;
       }
 
+      .book-toggle {
+        font-size: 0.78em;
+        color: #f45f7c;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 6px;
+        display: inline-block;
+      }
+
+      .radar-chart {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .radar-legend {
+        display: flex;
+        gap: 16px;
+        margin-top: 4px;
+        font-size: 0.78em;
+        color: #4a5568;
+      }
+
+      .radar-legend i {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 4px;
+      }
+
+      /* Animation de chargement : livre dont les pages tournent */
       .loading {
         text-align: center;
-        padding: 40px;
+        padding: 30px;
         display: none;
       }
 
-      .spinner {
-        border: 3px solid rgba(133, 145, 195, 0.2);
-        border-top: 3px solid #F45F7C;
-        border-radius: 50%;
-        width: 48px;
-        height: 48px;
-        animation: spin 0.8s linear infinite;
-        margin: 0 auto 20px;
+      .book-loader {
+        width: 64px;
+        height: 50px;
+        position: relative;
+        margin: 0 auto 16px;
+        perspective: 500px;
+      }
+
+      .book-loader .cover {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #8591c3 0%, #f45f7c 100%);
+        border-radius: 4px 8px 8px 4px;
+        box-shadow: 0 4px 10px rgba(244, 95, 124, 0.3);
+      }
+
+      .book-loader .page {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        height: calc(100% - 8px);
+        background: #fafbfc;
+        border-radius: 2px 0 0 2px;
+        transform-origin: left center;
+        animation: pageFlip 1.4s ease-in-out infinite;
+      }
+
+      .book-loader .page:nth-child(2) {
+        animation-delay: 0.45s;
+      }
+
+      .book-loader .page:nth-child(3) {
+        animation-delay: 0.9s;
+      }
+
+      @keyframes pageFlip {
+        0% {
+          transform: rotateY(0deg);
+          opacity: 1;
+        }
+        50% {
+          transform: rotateY(-150deg);
+          opacity: 0.5;
+        }
+        100% {
+          transform: rotateY(0deg);
+          opacity: 1;
+        }
       }
 
       .loading p {
-        color: #8591C3;
+        color: #8591c3;
         font-weight: 600;
         font-size: 0.95em;
       }
 
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
       .error-box {
         background: rgba(244, 95, 124, 0.1);
-        border-left: 4px solid #F45F7C;
+        border-left: 4px solid #f45f7c;
         padding: 18px;
         border-radius: 12px;
         margin-top: 20px;
@@ -327,7 +545,10 @@
 
           <div class="form-group">
             <label for="description"
-              >1. Décrivez le livre que vous recherchez en plusieurs phrases. Le plus de détails possible. Vous pouvez également mentionner des thèmes, des ambiances ou des émotions spécifiques. Aussi un style d'écriture préféré ou un pharagraphe complet comme example.</label
+              >1. Décrivez le livre que vous recherchez en plusieurs phrases. Le
+              plus de détails possible. Vous pouvez également mentionner des
+              thèmes, des ambiances ou des émotions spécifiques. Aussi un style
+              d'écriture préféré ou un pharagraphe complet comme example.</label
             >
             <textarea
               id="description"
@@ -340,7 +561,8 @@ Une romance contemporaine avec une histoire d'amour passionnée, des personnages
 
           <div class="form-group">
             <label for="favorite_books"
-              >2. Citez vos livres préférés de laquelle se baser pour cette recherche (séparés par des virgules)</label
+              >2. Citez vos livres préférés de laquelle se baser pour cette
+              recherche (séparés par des virgules)</label
             >
             <input
               type="text"
@@ -608,10 +830,13 @@ Une romance contemporaine avec une histoire d'amour passionnée, des personnages
       </form>
 
       <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p style="margin-top: 15px; color: #667eea; font-weight: 600">
-          Analyse en cours...
-        </p>
+        <div class="book-loader">
+          <div class="cover"></div>
+          <div class="page"></div>
+          <div class="page"></div>
+          <div class="page"></div>
+        </div>
+        <p>Analyse sémantique en cours...</p>
       </div>
 
       <div class="error-box" id="errorBox"></div>
@@ -622,12 +847,194 @@ Une romance contemporaine avec une histoire d'amour passionnée, des personnages
           <p id="summaryText"></p>
         </div>
 
-        <div class="section-title">🏆 Top 3 Recommandations</div>
+        <div class="section-title">📊 Comparatif des scores de similarité</div>
+        <p class="score-bars-caption">
+          Pourcentage de correspondance sémantique entre votre profil et
+          chaque livre (0% = aucun lien, 100% = texte identique — un score de
+          50-65% est déjà une forte correspondance, voir l'explication dans
+          le README).
+        </p>
+        <div class="score-bars-axis">
+          <span>0%</span><span>25%</span><span>50%</span><span>75%</span
+          ><span>100%</span>
+        </div>
+        <div class="score-bars" id="scoreBars"></div>
+
+        <div class="section-title" id="topTitle">🏆 Top 5 Recommandations</div>
         <div id="booksList"></div>
       </div>
     </div>
 
     <script>
+      const AXIS_LABELS = {
+        action: "Action",
+        romance: "Romance",
+        learning: "Apprentissage",
+        complexity: "Complexité",
+      };
+
+      // Couverture récupérée côté client via l'API publique Google Books
+      // (gratuite, sans clé). En cas d'échec ou d'absence de résultat, on
+      // garde l'icône 📖 déjà affichée par défaut dans .book-cover.
+      async function fetchCover(title, author) {
+        try {
+          let q = `intitle:${title}`;
+          if (author && author !== "N/A") q += ` inauthor:${author}`;
+          const res = await fetch(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=1`,
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          const thumb = data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail;
+          return thumb ? thumb.replace("http://", "https://") : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      // Liens d'achat/emprunt construits à partir du titre+auteur (recherche,
+      // pas de lien direct garanti vers la fiche produit exacte)
+      function buildLinks(title, author) {
+        const q = encodeURIComponent(
+          `${title} ${author !== "N/A" ? author : ""}`.trim(),
+        );
+        return {
+          amazon: `https://www.amazon.fr/s?k=${q}`,
+          fnac: `https://www.fnac.com/SearchResult/ResultList.aspx?Search=${q}`,
+          library: `https://bibliotheques.paris.fr/Default/recherche-simple?q=${q}`,
+        };
+      }
+
+      // Mini graphique radar en SVG pur (sans dépendance externe) comparant
+      // le profil souhaité (Likert) au profil estimé du livre par axe
+      function renderRadar(container, userProfile, bookProfile) {
+        const axes = Object.keys(AXIS_LABELS);
+        const size = 180,
+          center = size / 2,
+          R = 62;
+        const angleStep = (Math.PI * 2) / axes.length;
+
+        const pointFor = (i, value) => {
+          const angle = -Math.PI / 2 + i * angleStep;
+          const r = (value / 100) * R;
+          return [center + r * Math.cos(angle), center + r * Math.sin(angle)];
+        };
+
+        let svg = `<svg viewBox="0 0 ${size} ${size}" width="170" height="170">`;
+        [0.25, 0.5, 0.75, 1].forEach((f) => {
+          svg += `<circle cx="${center}" cy="${center}" r="${R * f}" fill="none" stroke="#e8eaf0" stroke-width="1"/>`;
+        });
+        axes.forEach((axis, i) => {
+          const [x, y] = pointFor(i, 100);
+          svg += `<line x1="${center}" y1="${center}" x2="${x}" y2="${y}" stroke="#e8eaf0" stroke-width="1"/>`;
+          const [lx, ly] = pointFor(i, 122);
+          svg += `<text x="${lx}" y="${ly}" font-size="8.5" fill="#8591c3" font-weight="600" text-anchor="middle" dominant-baseline="middle">${AXIS_LABELS[axis]}</text>`;
+        });
+
+        const series = [
+          { values: axes.map((a) => userProfile[a]), color: "#8591c3" },
+          { values: axes.map((a) => bookProfile[a]), color: "#f45f7c" },
+        ];
+        series.forEach((s) => {
+          const pts = s.values
+            .map((v, i) => pointFor(i, v).join(","))
+            .join(" ");
+          svg += `<polygon points="${pts}" fill="${s.color}" fill-opacity="0.22" stroke="${s.color}" stroke-width="2"/>`;
+        });
+        svg += `</svg>`;
+        container.innerHTML =
+          svg +
+          `<div class="radar-legend">
+             <span><i style="background:#8591c3"></i>Votre profil souhaité</span>
+             <span><i style="background:#f45f7c"></i>Profil estimé du livre</span>
+           </div>`;
+      }
+
+      function renderScoreBars(recommendations) {
+        const container = document.getElementById("scoreBars");
+        container.innerHTML = recommendations
+          .map(
+            (book) => `
+              <div class="score-bar-row">
+                <span class="score-bar-label"
+                  >#${book.rank} ${book.title}<br /><span
+                    class="score-bar-sublabel"
+                    >${book.genre}</span
+                  ></span
+                >
+                <div class="score-bar-track">
+                  <div class="score-bar-fill" style="width: ${book.score.toFixed(1)}%"></div>
+                </div>
+                <span class="score-bar-value">${book.score.toFixed(1)}%</span>
+              </div>
+            `,
+          )
+          .join("");
+      }
+
+      function renderBookCard(book, userProfile) {
+        const seriesLine =
+          book.series && book.series !== "N/A"
+            ? `<div class="book-meta">📚 Série : ${book.series}</div>`
+            : "";
+        const links = buildLinks(book.title, book.author);
+
+        const bookCard = document.createElement("div");
+        bookCard.className = "book-card";
+        bookCard.innerHTML = `
+          <div class="book-card-header">
+            <div class="book-cover">📖</div>
+            <div class="book-main">
+              <span class="book-rank">#${book.rank}</span>
+              <div class="book-title">${book.title}</div>
+              <div class="book-author">✍️ ${book.author}</div>
+              <div class="book-genre">📖 ${book.genre}</div>
+              ${seriesLine}
+              <div class="book-meta">🗓️ ${book.year} &middot; 🌐 ${book.language} &middot; 📄 ${book.pages} p. &middot; ⭐ ${book.rating}</div>
+              <div class="book-score">Score de similarité : ${book.score.toFixed(2)}%</div>
+              <div class="book-links">
+                <a href="${links.amazon}" target="_blank" rel="noopener">🛒 Amazon</a>
+                <a href="${links.fnac}" target="_blank" rel="noopener">🛒 Fnac</a>
+                <a href="${links.library}" target="_blank" rel="noopener">🏛️ Bib. Paris</a>
+              </div>
+              <span class="book-toggle">Voir le détail (résumé + radar) ▾</span>
+            </div>
+          </div>
+          <div class="book-details">
+            <div class="book-description">${book.description}</div>
+            <div class="radar-chart"></div>
+          </div>
+        `;
+
+        bookCard
+          .querySelector(".book-toggle")
+          .addEventListener("click", (e) => {
+            const details = bookCard.querySelector(".book-details");
+            const expanded = details.classList.toggle("expanded");
+            e.target.textContent = expanded
+              ? "Masquer le détail ▴"
+              : "Voir le détail (résumé + radar) ▾";
+            if (expanded && !details.dataset.radarRendered) {
+              renderRadar(
+                bookCard.querySelector(".radar-chart"),
+                userProfile,
+                book.axis_profile,
+              );
+              details.dataset.radarRendered = "1";
+            }
+          });
+
+        // Couverture : chargée en arrière-plan, ne bloque pas l'affichage
+        fetchCover(book.title, book.author).then((url) => {
+          if (url) {
+            bookCard.querySelector(".book-cover").innerHTML =
+              `<img src="${url}" alt="${book.title}">`;
+          }
+        });
+
+        return bookCard;
+      }
+
       document
         .getElementById("questionnaireForm")
         .addEventListener("submit", async (e) => {
@@ -656,25 +1063,17 @@ Une romance contemporaine avec une histoire d'amour passionnée, des personnages
               // Afficher la synthèse
               document.getElementById("summaryText").textContent = data.summary;
 
+              // Comparatif des scores (barres)
+              renderScoreBars(data.recommendations);
+              document.getElementById("topTitle").textContent =
+                `🏆 Top ${data.recommendations.length} Recommandations`;
+
               // Afficher les recommandations
               const booksList = document.getElementById("booksList");
               booksList.innerHTML = "";
 
               data.recommendations.forEach((book) => {
-                const bookCard = document.createElement("div");
-                bookCard.className = "book-card";
-                bookCard.innerHTML = `
-                            <span class="book-rank">#${book.rank}</span>
-                            <div class="book-title">${book.title}</div>
-                            <div class="book-genre">📖 ${book.genre}</div>
-                            <div class="book-score">⭐ Score: ${book.percentage.toFixed(
-                              2
-                            )}%</div>
-                            <div class="book-description">${
-                              book.description
-                            }</div>
-                        `;
-                booksList.appendChild(bookCard);
+                booksList.appendChild(renderBookCard(book, data.user_profile));
               });
 
               // Afficher les résultats

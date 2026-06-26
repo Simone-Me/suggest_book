@@ -1,155 +1,89 @@
 # -*- coding: utf-8 -*-
+"""
+Évaluation indépendante de la séparabilité sémantique des genres macro.
+
+Ce script ne mesure PAS la qualité du moteur de recommandation (qui restitue
+un Top-3 par similarité, sans notion de "bonne/mauvaise réponse"). Il répond à
+une question différente mais complémentaire : est-ce que les embeddings SBERT
+capturent assez de signal sémantique pour qu'un genre macro (fiction,
+romance, ...) soit devinable à partir du titre + de la description seuls ?
+C'est un indicateur de la qualité du corpus/embeddings (C5.3), distinct de la
+pertinence des recommandations elles-mêmes.
+"""
 import sys
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, classification_report, precision_score, f1_score
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
+from data_cleaning import load_and_clean_dataset, truncate_description
+
 # Fix Windows console encoding
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
 
-print("="*80)
-print("BOOK CLASSIFICATION - HYBRID SEMANTIC APPROACH")
-print("="*80)
+print("=" * 80)
+print("BOOK CLASSIFICATION - HYBRID SEMANTIC APPROACH (genres macro, corpus fusionné)")
+print("=" * 80)
 
 # =============================================================================
-# STEP 1: LOAD AND PREPARE DATA
+# STEP 1: CHARGEMENT DU CORPUS FUSIONNÉ (déjà nettoyé / regroupé en genres macro)
 # =============================================================================
-print("\n[STEP 1/6] Loading and cleaning dataset...")
+print("\n[STEP 1/6] Chargement du dataset nettoyé...")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-dataset = pd.read_csv('Book_Dataset_1.csv', sep=',', encoding='latin1')
-dataset = dataset.drop_duplicates()
+dataset = load_and_clean_dataset()
+dataset = dataset[dataset['genre_clean'] != 'unknown'].reset_index(drop=True)
 
-# Remove invalid categories
-dataset = dataset[
-    (dataset['Category'].str.strip() != '') &
-    (dataset['Category'].str.lower() != 'default') &
-    (dataset['Category'].str.lower() != 'add a comment')
+print(f"[OK] {len(dataset)} livres avec un genre macro connu")
+
+# =============================================================================
+# STEP 2: ÉCHANTILLONNAGE STRATIFIÉ (le corpus complet ~120k serait trop long à
+# encoder pour un simple benchmark de validation)
+# =============================================================================
+print("\n[STEP 2/6] Échantillonnage stratifié par genre...")
+
+MAX_PER_GENRE = 200
+MIN_BOOKS = 30
+
+sampled_parts = [
+    group.sample(min(len(group), MAX_PER_GENRE), random_state=42)
+    for _, group in dataset.groupby('genre_clean')
 ]
+sampled = pd.concat(sampled_parts, ignore_index=True)
 
-print(f"[OK] {len(dataset)} books loaded")
+genre_counts = sampled['genre_clean'].value_counts()
+valid_genres = genre_counts[genre_counts >= MIN_BOOKS].index
+sampled = sampled[sampled['genre_clean'].isin(valid_genres)].reset_index(drop=True)
 
-# =============================================================================
-# STEP 2: SMART CATEGORY GROUPING
-# =============================================================================
-print("\n[STEP 2/6] Grouping similar categories...")
-
-def clean_text(text):
-    if pd.isna(text):
-        return ''
-    return str(text).lower().strip()
-
-dataset['category_clean'] = dataset['Category'].apply(clean_text)
-
-# Category mapping
-category_mapping = {
-    # Fiction genres
-    'fiction': 'fiction',
-    'historical fiction': 'fiction',
-    'womens fiction': 'fiction',
-    'adult fiction': 'fiction',
-    'contemporary fiction': 'fiction',
-    
-    # Sci-fi & Fantasy
-    'fantasy': 'fantasy_scifi',
-    'science fiction': 'fantasy_scifi',
-    'paranormal': 'fantasy_scifi',
-    
-    # Mystery & Thriller
-    'mystery': 'mystery_thriller',
-    'thriller': 'mystery_thriller',
-    'crime': 'mystery_thriller',
-    'suspense': 'mystery_thriller',
-    
-    # Romance genres
-    'romance': 'romance',
-    'historical romance': 'romance',
-    
-    # Young readers
-    'young adult': 'young_adult',
-    'childrens': 'childrens',
-    
-    # Non-fiction categories
-    'nonfiction': 'nonfiction',
-    'biography': 'nonfiction',
-    'autobiography': 'nonfiction',
-    'history': 'nonfiction',
-    'philosophy': 'nonfiction',
-    
-    # Arts & Literature
-    'poetry': 'poetry_literature',
-    'classics': 'poetry_literature',
-    'novels': 'poetry_literature',
-    
-    # Visual arts
-    'sequential art': 'sequential_art',
-    'comics': 'sequential_art',
-    'graphic novels': 'sequential_art',
-    
-    # Practical
-    'food and drink': 'lifestyle',
-    'cookbooks': 'lifestyle',
-    'health': 'lifestyle',
-    'self help': 'lifestyle',
-    'parenting': 'lifestyle',
-    
-    # Academic
-    'science': 'academic',
-    'business': 'academic',
-    'psychology': 'academic',
-    'politics': 'academic',
-    'academic': 'academic',
-    
-    # Other
-    'horror': 'horror',
-    'humor': 'humor',
-    'travel': 'travel',
-    'music': 'arts',
-    'art': 'arts',
-    'cultural': 'arts',
-    'spirituality': 'spirituality',
-    'religion': 'spirituality',
-    'christian': 'spirituality',
-}
-
-dataset['category_grouped'] = dataset['category_clean'].map(
-    lambda x: category_mapping.get(x, 'other')
-)
-
-# Keep only categories with enough books
-min_books = 20
-grouped_counts = dataset['category_grouped'].value_counts()
-valid_categories = grouped_counts[grouped_counts >= min_books].index
-dataset = dataset[dataset['category_grouped'].isin(valid_categories)]
-dataset = dataset.reset_index(drop=True)
-
-print(f"[OK] {len(valid_categories)} final categories with >={min_books} books")
-print(f"[OK] {len(dataset)} books retained")
+print(f"[OK] {len(valid_genres)} genres retenus (>={MIN_BOOKS} livres) : {', '.join(sorted(valid_genres))}")
+print(f"[OK] {len(sampled)} livres échantillonnés pour ce benchmark")
 
 # =============================================================================
-# STEP 3: GENERATE SEMANTIC EMBEDDINGS
+# STEP 3: EMBEDDINGS SÉMANTIQUES (titre + description SEULEMENT, sans le genre)
 # =============================================================================
-print("\n[STEP 3/6] Generating semantic embeddings...")
+print("\n[STEP 3/6] Génération des embeddings (sans fuite du label dans le texte)...")
 
-dataset['title_clean'] = dataset['Title'].apply(clean_text)
-dataset['description_clean'] = dataset['Book_Description'].apply(clean_text)
-dataset['text_for_embedding'] = (
-    dataset['title_clean'] + ' ' + dataset['description_clean']
+# Important : on n'utilise pas 'text_full' (qui contient déjà le genre macro en
+# texte, utilisé par le moteur de recommandation) pour ne pas donner la réponse
+# au modèle. On teste ici si le genre est devinable à partir du seul contenu
+# narratif (titre + description), pas parce qu'on le lui a soufflé.
+sampled['text_for_embedding'] = (
+    sampled['title_clean'] + ' ' +
+    sampled['desc_clean'].apply(lambda x: truncate_description(x, max_words=100))
 )
 
 embeddings = model.encode(
-    dataset['text_for_embedding'].tolist(),
+    sampled['text_for_embedding'].tolist(),
     convert_to_tensor=True,
     show_progress_bar=True
 )
 
 X_all = embeddings.cpu().numpy()
-y_all = dataset['category_grouped']
+y_all = sampled['genre_clean']
 
 # Normalize
 scaler = StandardScaler()
@@ -158,37 +92,37 @@ X_all = scaler.fit_transform(X_all)
 print(f"[OK] Embeddings shape: {X_all.shape}")
 
 # =============================================================================
-# STEP 4: TRAIN/TEST SPLIT & CREATE CATEGORY PROFILES
+# STEP 4: TRAIN/TEST SPLIT & PROFILS DE GENRE (centroïdes)
 # =============================================================================
-print("\n[STEP 4/6] Splitting data and creating category profiles...")
+print("\n[STEP 4/6] Split train/test et création des profils de genre...")
 
-indices = np.arange(len(dataset))
+indices = np.arange(len(sampled))
 idx_train, idx_test = train_test_split(
-    indices, 
+    indices,
     test_size=0.25,
-    random_state=42, 
+    random_state=42,
     stratify=y_all
 )
 
 # Create category profiles (centroids)
 category_profiles = {}
-for category in dataset.iloc[idx_train]['category_grouped'].unique():
-    category_mask = dataset.iloc[idx_train]['category_grouped'] == category
+for category in sampled.iloc[idx_train]['genre_clean'].unique():
+    category_mask = sampled.iloc[idx_train]['genre_clean'] == category
     train_indices_for_cat = idx_train[category_mask[idx_train]]
     category_embeddings = X_all[train_indices_for_cat]
     category_profiles[category] = np.mean(category_embeddings, axis=0)
 
 X_train = X_all[idx_train]
-y_train = dataset.iloc[idx_train]['category_grouped'].values
-y_test = dataset.iloc[idx_test]['category_grouped'].values
+y_train = sampled.iloc[idx_train]['genre_clean'].values
+y_test = sampled.iloc[idx_test]['genre_clean'].values
 
 print(f"[OK] Train: {len(idx_train)} | Test: {len(idx_test)}")
-print(f"[OK] {len(category_profiles)} category profiles created")
+print(f"[OK] {len(category_profiles)} profils de genre créés")
 
 # =============================================================================
-# STEP 5: HYBRID PREDICTION (CENTROID + K-NN)
+# STEP 5: PRÉDICTION HYBRIDE (CENTROÏDE + K-NN)
 # =============================================================================
-print("\n[STEP 5/6] Running hybrid prediction...")
+print("\n[STEP 5/6] Prédiction hybride...")
 
 k = 5  # Number of neighbors
 alpha = 0.6  # Weight for centroid
@@ -198,49 +132,51 @@ y_pred_hybrid = []
 
 for idx in idx_test:
     query_embedding = X_all[idx].reshape(1, -1)
-    
+
     # Centroid scores
     centroid_scores = {}
     for category, profile in category_profiles.items():
         similarity = cosine_similarity(query_embedding, profile.reshape(1, -1))[0][0]
         centroid_scores[category] = similarity
-    
+
     # K-NN scores
     similarities = cosine_similarity(query_embedding, X_train)[0]
     top_k_indices = np.argsort(similarities)[-k:][::-1]
     neighbors_categories = y_train[top_k_indices]
-    
+
     knn_scores = {}
     for cat in category_profiles.keys():
         knn_scores[cat] = (neighbors_categories == cat).sum() / k
-    
+
     # Hybrid combination
     hybrid_scores = {}
     for cat in category_profiles.keys():
         hybrid_scores[cat] = alpha * centroid_scores[cat] + beta * knn_scores[cat]
-    
+
     predicted_category = max(hybrid_scores.items(), key=lambda x: x[1])[0]
     y_pred_hybrid.append(predicted_category)
 
 # =============================================================================
-# STEP 6: EVALUATION
+# STEP 6: ÉVALUATION (precision / recall / f1-score / support)
 # =============================================================================
-print("\n" + "="*80)
-print("RESULTS")
-print("="*80)
+print("\n" + "=" * 80)
+print("RESULTATS")
+print("=" * 80)
 
 accuracy = accuracy_score(y_test, y_pred_hybrid)
 precision = precision_score(y_test, y_pred_hybrid, average='weighted', zero_division=0)
 f1 = f1_score(y_test, y_pred_hybrid, average='weighted', zero_division=0)
 
-print(f"\n[STEP 6/6] Hybrid Method (alpha={alpha}, beta={beta}, K={k})")
-print(f"   Accuracy:  {accuracy:.4f} ({accuracy*100:.2f}%)")
-print(f"   Precision: {precision:.4f}")
-print(f"   F1-Score:  {f1:.4f}")
+print(f"\n[STEP 6/6] Méthode hybride (alpha={alpha}, beta={beta}, K={k})")
+print(f"   Accuracy:             {accuracy:.4f} ({accuracy*100:.2f}%)")
+print(f"   Precision (weighted): {precision:.4f}")
+print(f"   F1-Score (weighted):  {f1:.4f}")
 
-print("\nDetailed Classification Report:")
-print(classification_report(y_test, y_pred_hybrid, zero_division=0))
+print("\nRapport détaillé (precision / recall / f1-score / support par genre) :")
+report_dict = classification_report(y_test, y_pred_hybrid, zero_division=0, output_dict=True)
+report_df = pd.DataFrame(report_dict).transpose().round(3)
+print(report_df.to_string())
 
-print("\n" + "="*80)
-print("[SUCCESS] CLASSIFICATION COMPLETE")
-print("="*80)
+print("\n" + "=" * 80)
+print("[SUCCESS] EVALUATION TERMINEE")
+print("=" * 80)

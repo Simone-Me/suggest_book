@@ -11,11 +11,15 @@ ENV/
 dist/
 build/
 
+#data
+*.csv
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
 # Embeddings cache (large file)
 embeddings_books.pkl
+cleaned_books_cache.pkl
 
 # User data
 user_preferences.json

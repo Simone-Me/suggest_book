@@ -13,13 +13,15 @@
 
 import sys
 import os
-import pandas as pd
+import re
 import numpy as np
 import pickle
 import json
 from datetime import datetime
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+
+from data_cleaning import load_and_clean_dataset
 
 # Fix Windows console encoding
 if sys.platform == 'win32':
@@ -113,41 +115,18 @@ def save_preferences(preferences, filepath="user_preferences.json"):
 # EF2 : MOTEUR NLP SÉMANTIQUE (Coût Zéro)
 # ============================================================
 
-def load_knowledge_base(path="Book_Dataset_1.csv"):
+def load_knowledge_base():
     """
     EF2.1 : Référentiel de connaissances (livres)
-    Charge et nettoie le dataset de livres
+    Fusionne Book_Dataset_1 + BooksDatasetClean + Best_Books_Ever et nettoie
+    le référentiel (data_cleaning.py, partagé avec app.py)
     """
     print("\n[EF2.1] Chargement du référentiel de connaissances...")
-    
-    df = pd.read_csv(path, sep=',', encoding='latin1')
-    df = df.drop_duplicates()
-    
-    # Nettoyage
-    df = df[
-        (df['Category'].str.strip() != '') &
-        (df['Category'].str.lower() != 'default') &
-        (df['Category'].str.lower() != 'add a comment')
-    ]
-    
-    df = df.dropna(subset=['Title'])
-    
-    def clean_text(text):
-        return str(text).strip().lower() if pd.notna(text) else ""
-    
-    df['title_clean'] = df['Title'].apply(clean_text)
-    df['desc_clean'] = df['Book_Description'].apply(clean_text)
-    df['genre_clean'] = df['Category'].apply(clean_text)
-    
-    # EF2.1 : Texte complet pour embeddings
-    df['text_full'] = (
-        df['title_clean'] + ". " +
-        df['genre_clean'] + ". " +
-        df['desc_clean']
-    )
-    
+
+    df = load_and_clean_dataset()
+
     print(f"[OK] {len(df)} livres dans le référentiel")
-    
+
     return df
 
 
@@ -220,7 +199,10 @@ Génère UNE phrase enrichie (max 30 mots) qui développe les thèmes, l'ambianc
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "maxOutputTokens": 150,
-                "temperature": 0.8
+                "temperature": 0.8,
+                # Sans ça, Gemini 2.5 consomme le budget de tokens en "réflexion"
+                # interne avant d'écrire la réponse visible (réponse tronquée)
+                "thinkingConfig": {"thinkingBudget": 0}
             }
         }
         
@@ -283,14 +265,16 @@ def build_query_from_preferences(preferences):
     return query
 
 
-def calculate_weighted_similarity(query_emb, book_emb, likert_scores):
+def calculate_weighted_similarity(query_emb, book_embeddings, likert_scores):
     """
     EF3.1 : Formule de Score Pondérée
-    Calcul la similarité cosinus pondérée par les préférences Likert
+    Calcule la similarité cosinus pondérée par les préférences Likert pour tout
+    le corpus en une seule fois (vectorisé : avec ~120k livres fusionnés, une
+    boucle Python par livre serait beaucoup trop lente)
     """
     # EF2.3 : Similarité Cosinus de base
-    base_similarity = cosine_similarity(query_emb.reshape(1, -1), book_emb.reshape(1, -1))[0][0]
-    
+    base_similarity = cosine_similarity(query_emb.reshape(1, -1), book_embeddings)[0]
+
     # EF3.1 : Pondération par intensités
     # Moyenne des scores Likert (normalisée 0-1)
     avg_intensity = np.mean([
@@ -299,57 +283,112 @@ def calculate_weighted_similarity(query_emb, book_emb, likert_scores):
         likert_scores.get('intensity_learning', 3),
         likert_scores.get('complexity', 3)
     ]) / 5.0
-    
+
     # Score pondéré : 80% similarité + 20% intensité préférences
     weighted_score = 0.8 * base_similarity + 0.2 * avg_intensity
-    print(f"[EF3.1] Score pondéré : {weighted_score}")
     return weighted_score
 
 
+def format_value(value):
+    """Formate une valeur potentiellement manquante (NaN/None/vide) pour l'affichage."""
+    if value is None:
+        return "N/A"
+    if isinstance(value, float):
+        if np.isnan(value):
+            return "N/A"
+        if value == int(value):
+            value = int(value)  # 2008.0 / 374.0 -> "2008" / "374"
+    text = str(value).strip()
+    if text == "" or text.lower() == "nan":
+        return "N/A"
+    return text
+
+
+def format_genre(genre_clean):
+    """Transforme un genre macro ('fantasy_scifi') en libellé lisible ('Fantasy Scifi')."""
+    if not genre_clean or genre_clean in ("unknown", "other"):
+        return "Genre non classé"
+    return genre_clean.replace("_", " ").title()
+
+
+def get_already_read_indices(df, favorite_books_text):
+    """
+    Identifie les livres déjà mentionnés dans "livres préférés" pour qu'ils ne
+    soient pas re-suggérés dans le Top 3 (un livre déjà lu n'est pas une
+    recommandation utile).
+    """
+    if not favorite_books_text or not favorite_books_text.strip():
+        return set()
+
+    favorite_titles = [t.strip().lower() for t in favorite_books_text.split(',') if t.strip()]
+    if not favorite_titles:
+        return set()
+
+    # Ancré en début de titre (pas une simple sous-chaîne) pour éviter les faux
+    # positifs comme "Twilight" qui matcherait aussi "Twilight of the Elites"
+    title_norm = df['title'].astype(str).str.strip().str.lower()
+    excluded = set()
+    for fav in favorite_titles:
+        pattern = r'^' + re.escape(fav) + r'(\s*[\(:,\-].*)?$'
+        matches = title_norm[title_norm.str.match(pattern, na=False)]
+        excluded.update(matches.index.tolist())
+
+    return excluded
+
+
 # ============================================================
-# EF3.2 : SYSTÈME DE RECOMMANDATION TOP 3
+# EF3.2 : SYSTÈME DE RECOMMANDATION TOP 5
 # ============================================================
 
-def recommend_books(preferences, df, model, embeddings, top_k=3, use_genai=False, api_key=None):
+def recommend_books(preferences, df, model, embeddings, top_k=5, use_genai=False, api_key=None):
     """
-    EF3.2 : Recommandation des Top 3 livres
+    EF3.2 : Recommandation des Top 5 livres
     """
     print("\n[EF3] Calcul des recommandations...")
-    
+
     # Construire la requête
     query_text = build_query_from_preferences(preferences)
-    
+
     # EF4.1 : Enrichissement conditionnel
     query_text = enrich_short_query(query_text, use_genai, api_key)
-    
+
     print(f"\n[EF2.3] Requête finale : {query_text[:200]}...")
-    
+
     # Encoder la requête
     query_emb = model.encode(query_text, convert_to_tensor=False)
-    
-    # Calculer les scores pondérés pour chaque livre
-    scores = []
-    for i in range(len(df)):
-        book_emb = embeddings[i]
-        score = calculate_weighted_similarity(query_emb, book_emb, preferences)
-        scores.append(score)
-    
-    scores = np.array(scores)
-    
-    # EF3.2 : Top 3 recommandations
+
+    # Calculer les scores pondérés pour tout le corpus (vectorisé)
+    scores = calculate_weighted_similarity(query_emb, embeddings, preferences)
+
+    # Exclure les livres déjà lus (mentionnés comme "livres préférés")
+    already_read = get_already_read_indices(df, preferences.get('favorite_books', ''))
+    if already_read:
+        print(f"[EF3] {len(already_read)} livre(s) déjà lu(s) exclu(s) du classement : "
+              f"{', '.join(df.loc[list(already_read), 'title'].head(5))}")
+        scores = scores.copy()
+        scores[list(already_read)] = -np.inf
+
+    # EF3.2 : Top N recommandations
     top_indices = np.argsort(-scores)[:top_k]
-    
+
     recommendations = []
     for rank, idx in enumerate(top_indices, 1):
+        book = df.iloc[idx]
         rec = {
             'rank': rank,
-            'title': df.iloc[idx]['Title'],
-            'genre': df.iloc[idx]['Category'],
-            'description': df.iloc[idx]['Book_Description'] if pd.notna(df.iloc[idx]['Book_Description']) else "Description non disponible",
+            'title': book['title'],
+            'author': format_value(book['authors_clean']),
+            'genre': format_genre(book['genre_clean']),
+            'year': format_value(book['year']),
+            'series': format_value(book['series']),
+            'language': format_value(book['language']),
+            'pages': format_value(book['pages']),
+            'rating': format_value(book['rating']),
+            'description': book['desc_display'] if book['desc_display'] else "Description non disponible",
             'similarity_score': float(scores[idx])
         }
         recommendations.append(rec)
-    
+
     return recommendations, query_text
 
 
@@ -395,7 +434,10 @@ Réponse concise et directe."""
                 "maxOutputTokens": 512,
                 "temperature": 0.7,
                 "topP": 0.9,
-                "topK": 40
+                "topK": 40,
+                # Sans ça, Gemini 2.5 consomme le budget de tokens en "réflexion"
+                # interne avant d'écrire la réponse visible (réponse tronquée)
+                "thinkingConfig": {"thinkingBudget": 0}
             }
         }
         
@@ -459,14 +501,17 @@ def display_results(preferences, recommendations, summary):
         print(summary)
         print()
     
-    # Top 3 Recommandations
+    # Top 5 Recommandations
     print("\n" + "="*80)
-    print("[TOP 3 RECOMMANDATIONS]")
+    print(f"[TOP {len(recommendations)} RECOMMANDATIONS]")
     print("="*80)
     
     for rec in recommendations:
         print(f"\n{rec['rank']}. {rec['title']}")
+        print(f"   Auteur     : {rec['author']}")
         print(f"   Genre      : {rec['genre']}")
+        print(f"   Année      : {rec['year']}   Série : {rec['series']}   Langue : {rec['language']}")
+        print(f"   Pages      : {rec['pages']}   Note : {rec['rating']}")
         print(f"   Score      : {rec['similarity_score']:.4f}")
         print(f"   Résumé     : {rec['description'][:200]}...")
         print("-"*80)
@@ -513,7 +558,7 @@ def main():
     # EF3 : Recommandations
     recommendations, query_text = recommend_books(
         preferences, df, model, embeddings,
-        top_k=3,
+        top_k=5,
         use_genai=USE_GENAI,
         api_key=GEMINI_API_KEY
     )
