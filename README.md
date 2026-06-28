@@ -4,7 +4,44 @@ Système de recommandation de livres combinant analyse sémantique locale (SBERT
 
 Projet EFREI M1 Data Engineering & IA Générative.
 
-> Ce fichier remplace `README_WEB.md` et `GUIDE_COMPLET.md` (désormais supprimés) — toute la documentation technique du projet est centralisée ici. `RAPPORT_PROJET.md` reste un document séparé (livrable de rapport, non un guide d'installation).
+> Ce fichier remplace `README_WEB.md` et `GUIDE_COMPLET.md` (désormais supprimés) — toute la documentation technique du projet est centralisée ici. `RAPPORT_PROJET.md` reste un document séparé (livrable de rapport, non un guide d'installation). `REFERENTIEL_RNCP.md` mappe chaque compétence du Bloc 2 (RNCP40875) au code du projet, pour la préparation du passage devant jury.
+
+## 🕘 Historique des versions
+
+Le projet a été repris et ré-évalué à deux reprises depuis sa première version — chaque section ci-dessous correspond à une itération distincte, pas à un développement isolé.
+
+### v1.0 — Version initiale
+
+- Référentiel unique (~700 livres, une seule source)
+- Questionnaire hybride (questions ouvertes + échelles de Likert)
+- Embeddings SBERT (`all-MiniLM-L6-v2`) + similarité cosinus
+- Scoring pondéré 80% sémantique / 20% préférences Likert
+- GenAI : enrichissement conditionnel des requêtes courtes + synthèse personnalisée (1 appel)
+- Top 3 recommandations
+- Interface web Flask basique (en anglais)
+- Sauvegarde de l'historique des préférences/résultats en JSON
+
+### v2.0 — Référentiel multi-source et dashboard enrichi
+
+Refonte majeure du moteur et de l'interface :
+
+- **Données** : fusion de 3 sources (`Book_Dataset_1`, `BooksDatasetClean`, `Best_Books_Ever`) en un référentiel unique de ~120 000 livres (170x plus grand) ; dédoublonnage titre+auteur cross-source ; regroupement de ~3 100 catégories brutes en 15 genres macro ; extraction de mots-clés (TF-IDF) ; bucketing de période
+- **Moteur** : scoring vectorisé à l'échelle du nouveau corpus ; exclusion des livres déjà lus ; Top 5 (au lieu de Top 3) ; correctif Gemini (`thinkingConfig` désactivé — les synthèses étaient tronquées)
+- **Interface web** : graphique radar (profil souhaité vs livre), comparatif des scores en barres, couvertures (Google Books API), liens d'achat/emprunt, animation de chargement, log temps réel du pipeline dans le terminal
+- **Évaluation** : `analysis_improved.py` réécrit sur le référentiel fusionné, sans fuite de label, avec rapport precision/recall/f1/support complet
+- **Documentation** : README consolidé en un seul fichier
+
+### v2.1 — Révisions suite aux retours et suggestions
+
+Cette itération traite la v2.0 comme un existant à ré-évaluer plutôt qu'une base figée, en réponse à des retours et suggestions d'amélioration :
+
+- **Identité visuelle / UX** : logo et favicon (`stack-of-books.png`), animation de chargement remplacée par un GIF animé avec attribution ([Flaticon/Freepik](https://www.flaticon.com/free-animated-icons/read)), lien "Bibliothèque de Paris" corrigé avec le vrai format d'URL du catalogue, questionnaire reformulé pour clarifier qu'on décrit un **genre/profil de lecture** et non un titre précis à retrouver
+- **Correctifs** : régression CSS découverte et corrigée (logo affiché à 512px au lieu de 48px, animation de chargement et son attribution manquantes — perdues lors d'une récupération de styles depuis l'historique git), résidus nettoyés (placeholder oublié dans le README, fichier de crash debris)
+- **Évaluation et KPIs** : nouveau dashboard interactif `/kpi` — cartes accuracy/precision/recall/F1, **comparaison de 5 modèles** de classification (centroïde, K-NN, hybride, régression logistique, Random Forest) avec coût (temps d'entraînement/prédiction, taille mémoire), heatmap de confusion avec **filtre par genre et calcul TP/FP/FN/TN en direct**. Le modèle retenu est désormais sélectionné automatiquement par meilleur F1 plutôt que fixé en dur — ce qui a révélé que le centroïde seul bat l'hybride et les modèles plus lourds, tout en étant ~150x plus léger à stocker (angle écoresponsabilité)
+- **GenAI** : évaluation automatique de la qualité de la synthèse Gemini — cohérence sémantique (cosinus résumé ↔ livre recommandé) et vérification anti-hallucination des livres suggérés contre le référentiel (~120k titres), via un format de sortie structuré imposé au prompt
+- **Sémantique multilingue** : passage de `all-MiniLM-L6-v2` à `paraphrase-multilingual-MiniLM-L12-v2` pour aligner les requêtes en français avec un corpus partiellement non-anglais (régénération des embeddings en cours sur ~120k livres)
+- **Accessibilité** : contraste de texte mis en conformité WCAG AA sur les couleurs principales (vérifié par calcul de ratio de luminance, pas seulement à l'œil) ; attributs ARIA (rôles, labels, descriptions) sur le formulaire, les zones dynamiques et le graphique radar
+- **Documentation** : `REFERENTIEL_RNCP.md` — mapping de chaque compétence du Bloc 2 (RNCP40875) au code du projet, avec limites assumées explicitement plutôt que dissimulées
 
 ## 🌟 Fonctionnalités
 
@@ -14,8 +51,12 @@ Projet EFREI M1 Data Engineering & IA Générative.
 - **Scoring pondéré** : 80% similarité sémantique + 20% préférences Likert, vectorisé pour tenir sur un corpus de cette taille
 - **Exclusion des livres déjà lus** : les titres cités dans "livres préférés" ne sont jamais re-suggérés
 - **GenAI stratégique** : enrichissement conditionnel des requêtes courtes + synthèse personnalisée (1 seul appel)
+- **Évaluation de la synthèse GenAI** : cohérence sémantique (cosinus résumé ↔ livre) + vérification anti-hallucination des livres suggérés contre le référentiel
 - **Interface web** : graphique radar (profil souhaité vs livre), comparatif de scores en barres, couvertures et liens d'achat/emprunt, log temps réel dans le terminal
-- **Évaluation indépendante** : benchmark de séparabilité sémantique des genres (precision/recall/f1/support)
+- **Évaluation indépendante** : benchmark de séparabilité sémantique des genres (precision/recall/f1/support) + matrice de confusion
+- **Comparaison de modèles + écoresponsabilité** : 5 méthodes de classification comparées (accuracy/F1 vs temps d'entraînement/prédiction et taille mémoire), modèle retenu choisi automatiquement par meilleur F1, pas fixé en dur
+- **Dashboard KPI interactif (`/kpi`)** : accuracy/précision/rappel/F1 pondérés, tableau de comparaison de modèles, heatmap de confusion avec filtre par genre (TP/FP/FN/TN dérivés en direct)
+- **Accessibilité** : contraste de texte WCAG AA sur les couleurs principales, ARIA sur les formulaires/graphiques/zones dynamiques
 
 ## 🏗️ Architecture
 
@@ -49,7 +90,7 @@ pip install -r requirements.txt
    - `BooksDatasetClean.csv`
    - `Best_Books_Ever.csv`
 
-   À télécharger sur Kaggle : ajouter lien moi meme
+   Liens de téléchargement :
    - [Best_Books_Ever.csv](https://zenodo.org/records/4265096?preview_file=books_1.Best_Books_Ever.csv)
    - [BooksDatasetClean.csv](https://www.kaggle.com/datasets/elvinrustam/books-dataset/data)
    - [Book_Dataset_1.csv](https://www.kaggle.com/datasets/jalota/books-dataset)
@@ -91,7 +132,7 @@ Au tout premier lancement (CLI ou web), deux caches sont construits :
 | Cache | Coût | Construit par |
 |---|---|---|
 | `cleaned_books_cache.pkl` | ~2 min (fusion + dédoublonnage + mots-clés TF-IDF sur ~150k lignes) | `data_cleaning.load_and_clean_dataset()` |
-| `embeddings_books.pkl` | ~30-60 min sur CPU (encodage SBERT de ~120k livres) | `app.py` / `book_recommendation_system.py` |
+| `embeddings_books.pkl` | ~60-120 min sur CPU (encodage SBERT multilingue de ~120k livres) | `app.py` / `book_recommendation_system.py` |
 
 Les deux sont sauvegardés sur disque et réutilisés à chaque lancement suivant — ils ne sont régénérés que si vous les supprimez ou passez `force_rebuild=True`. Ne supprimez pas `embeddings_books.pkl` sans raison, c'est la partie longue.
 
@@ -181,13 +222,23 @@ Deux appels conditionnels/uniques, jamais plus, pour rester dans le quota gratui
 
 **Piège rencontré et corrigé** : Gemini 2.5 consomme par défaut une partie du budget de tokens en "réflexion" interne (`thinkingConfig`) avant d'écrire la réponse visible — avec un budget de 512 tokens, on a mesuré jusqu'à 487 tokens absorbés par cette réflexion, ne laissant que 20 tokens pour la vraie réponse (synthèse coupée après une phrase). Réglé en forçant `"thinkingConfig": {"thinkingBudget": 0}` dans les 3 appels API du projet.
 
+### Évaluation de la qualité de la synthèse GenAI
+
+Comme pour les recommandations elles-mêmes, un texte généré n'a pas de "bonne réponse" prédéfinie à comparer. Deux métriques mesurables et automatiques sont calculées à chaque requête (`evaluate_genai_quality()` dans `app.py`) :
+
+- **Cohérence sémantique** : similarité cosinus entre l'embedding de la synthèse générée et l'embedding du livre Top 1 qu'elle est censée décrire. Une synthèse qui dérive du sujet (hors-sujet, hallucination généralisée) aurait un score faible.
+- **Anti-hallucination des suggestions** : le prompt impose à Gemini de terminer sa réponse par une ligne structurée (`LIVRES_SIMILAIRES: Titre1 | Titre2`), extraite côté serveur (`extract_suggested_titles()`) et vérifiée par correspondance exacte normalisée contre les ~120 000 titres du référentiel. Une suggestion qui n'existe pas dans le corpus est comptée comme une hallucination.
+
+Les deux scores sont affichés sous la synthèse dans l'interface web (cohérence en %, nombre de titres suggérés vérifiés / total) et sauvegardés dans `recommendation_results.json` pour suivi dans le temps. Limite connue : la vérification anti-hallucination est une correspondance exacte (normalisée en minuscules) — un titre suggéré légèrement mal formulé par Gemini sera compté comme non vérifié même s'il existe réellement dans le corpus (faux positif d'hallucination, pas de fuzzy matching pour rester rapide).
+
 ## 🖥️ Interface web — détails
 
 - **Couvertures** : récupérées côté navigateur via l'API publique Google Books (gratuite, sans clé), par recherche titre+auteur. Si rien n'est trouvé, l'icône 📖 reste affichée.
 - **Liens d'achat/emprunt** : recherche Amazon et Fnac par titre+auteur (URLs de recherche standard) ; lien "Bibliothèque de Paris" en best-effort — le format exact de l'URL de recherche du catalogue n'est pas garanti, à vérifier.
 - **Radar** : compare le profil souhaité (4 axes Likert) au profil estimé du livre, calculé par similarité cosinus entre l'embedding du livre et une phrase-ancre par axe (ex : "histoire d'amour centrale et romance passionnée" pour l'axe romance). Échelle calibrée empiriquement sur ce modèle/corpus, à but illustratif.
 - **Comparatif en barres** : scores des 3 recommandations côte à côte.
-- **Animation de chargement** : livre aux pages qui tournent, en CSS pur (pas de PNG/GIF/MP4 — plus léger, sans fichier à charger, couleurs alignées sur le thème).
+- **Animation de chargement** : GIF de livre animé ([Flaticon, par Freepik](https://www.flaticon.com/free-animated-icons/read)), avec attribution affichée sous l'animation (licence Flaticon).
+- **Accessibilité** : contraste de texte vérifié WCAG AA (≥4.5:1) sur les couleurs de texte principales du thème (bleu/violet de marque assombri en `#525fa0` pour les usages texte ; les éléments décoratifs — boutons en dégradé, badges — ne sont pas couverts par cette passe). `role="radiogroup"`/`aria-labelledby` sur les échelles de Likert, `role="alert"`/`role="status"` sur les zones d'erreur/chargement, description textuelle (`aria-label`/`<title>`) sur le graphique radar SVG pour les lecteurs d'écran.
 - **Log terminal** : chaque requête affiche dans la console les étapes (requête construite, encodage SBERT chronométré, similarité calculée, exclusions, Top 3, appel GenAI chronométré, durée totale).
 
 ## 🔬 Évaluation indépendante (`analysis_improved.py`)
@@ -196,7 +247,40 @@ Ce script ne mesure pas la qualité des recommandations (qui n'ont pas de "bonne
 
 Important : le texte utilisé pour ce benchmark exclut volontairement le genre macro (contrairement à `text_full`, utilisé par le moteur de recommandation, qui l'inclut) — sinon le modèle "tricherait" en lisant la réponse dans son entrée.
 
-Résultat de référence (échantillon stratifié de 8 400 livres, 600/genre) : accuracy 53.3%, precision pondérée 0.52, f1 pondéré 0.52, avec un rapport complet precision/recall/f1-score/support par genre affiché en sortie. `fiction` et `other` (genres "fourre-tout") sont les moins bien prédits ; `humor`, `lifestyle`, `sequential_art` (genres narrativement distinctifs) les mieux prédits — cohérent avec l'intuition.
+### Pourquoi ce KPI plutôt qu'un autre
+
+Le moteur de recommandation lui-même n'a pas de label de vérité terrain (aucune liste de "bonnes réponses" attendues par profil utilisateur), donc une précision/rappel calculée directement sur les recommandations serait soit arbitraire, soit nécessiterait une annotation manuelle hors de portée du projet. **Accuracy / precision / recall / F1 pondérés sur la classification du genre macro (via les embeddings)** est le meilleur proxy disponible parce que :
+
+- le genre macro (`genre_clean`) est la seule métadonnée catégorielle fiable et déjà présente sur tout le corpus (~120k livres) — pas besoin d'annotation supplémentaire ;
+- une bonne séparabilité par genre est une **condition nécessaire** à des recommandations sémantiquement cohérentes : si le modèle ne distingue même pas "romance" de "horreur" par les embeddings, la similarité cosinus utilisée pour les recommandations n'est pas fiable non plus ;
+- la méthode (split train/test stratifié, aucune fuite du label dans le texte encodé) est reproductible et auditable, contrairement à une évaluation purement qualitative.
+
+### Comparaison de modèles et écoresponsabilité (C4.2/C4.3)
+
+`analysis_improved.py` ne teste pas qu'une seule méthode : 5 approches sont évaluées sur le même split train/test, pour vérifier si un modèle plus coûteux apporte un gain qui le justifie, plutôt que de confirmer un choix déjà fait :
+
+| Modèle | Accuracy | F1 pondéré | Temps entraînement | Temps prédiction | Taille mémoire |
+|---|---|---|---|---|---|
+| **Centroïde seul** | **55.7%** | **0.546** | 0s | 5.7s (boucle partagée) | **21.8 Ko** |
+| K-NN seul (k=5) | 49.0% | 0.463 | 0s | 5.7s (boucle partagée) | 3 154 Ko |
+| Hybride centroïde+K-NN (alpha=0.6/beta=0.4) | 53.7% | 0.519 | 0s | 5.7s (boucle partagée) | 3 176 Ko |
+| Régression logistique | 44.4% | 0.444 | 0.19s | 0.003s | 43 Ko |
+| Random Forest (100 arbres) | 47.7% | 0.464 | 0.54s | 0.05s | 22 176 Ko |
+
+**Résultat surprenant et conservé tel quel** : le centroïde seul (simple moyenne des embeddings par genre, comparée par cosinus) bat à la fois le K-NN, l'hybride centroïde+K-NN, la régression logistique *et* la Random Forest — tout en étant ~150x plus léger à stocker que l'hybride et ~1000x plus léger que la Random Forest. Conclusion écoresponsabilité (C4.3) : ici, le modèle le plus simple est aussi le meilleur ; la complexité supplémentaire (K-NN, ensembles d'arbres) n'achète aucune précision, seulement du coût de stockage/calcul. Le **modèle retenu** (`kpi_results.json["retained_model"]`, affiché sur `/kpi`) est donc sélectionné automatiquement par meilleur F1 pondéré parmi les 5, pas fixé en dur — si un futur ré-entraînement change ce classement, la page `/kpi` et ce README doivent être régénérés/mis à jour en conséquence.
+
+| Métrique (modèle retenu) | Valeur |
+|---|---|
+| Accuracy | 55.7% |
+| Précision pondérée | 0.55 |
+| Rappel pondéré | 0.56 |
+| F1 pondéré | 0.55 |
+
+`fiction` et `other` (genres "fourre-tout") restent les moins bien prédits ; `humor`, `lifestyle`, `spirituality_philosophy` (genres narrativement distinctifs) les mieux prédits — cohérent avec l'intuition. Le rapport complet (precision/recall/f1-score/support par genre), la matrice de confusion et la comparaison des 5 modèles sont exportés dans `kpi_results.json` et visualisables sur **`/kpi`** dans l'interface web (cartes de synthèse, tableau de comparaison de modèles, tableau par genre, heatmap de confusion avec filtre par genre affichant TP/FP/FN/TN dérivés).
+
+Important : cette comparaison ne remet pas en cause le moteur de recommandation principal (`app.py`), qui n'utilise aucun de ces 5 classifieurs — il reste basé sur la similarité cosinus directe entre l'embedding de la requête et ceux du corpus (cf. [Architecture](#-architecture)). Elle ne concerne que ce benchmark indépendant de séparabilité des genres.
+
+Relancer `python analysis_improved.py` régénère `kpi_results.json` (et donc la page `/kpi`) après toute modification du corpus ou de la méthode.
 
 ## 📁 Structure du projet
 
@@ -212,15 +296,18 @@ Résultat de référence (échantillon stratifié de 8 400 livres, 600/genre) : 
 ├── Best_Books_Ever.csv             # Source brute 3 (à télécharger, voir Dataset)
 ├── cleaned_books_cache.pkl         # Cache du dataset fusionné/nettoyé (généré au 1er lancement)
 ├── embeddings_books.pkl            # Cache des embeddings SBERT (généré au 1er lancement)
+├── kpi_results.json                # Résultats du benchmark (généré par analysis_improved.py, lu par /kpi)
 ├── templates/
-│   └── index.html                  # Interface web
+│   ├── index.html                  # Interface web (questionnaire + résultats)
+│   └── kpi.html                    # Dashboard KPI (accuracy/precision/recall/F1 + matrice de confusion)
 ├── RAPPORT_PROJET.md               # Rapport de projet (document séparé, non couvert ici)
+├── REFERENTIEL_RNCP.md             # Mapping compétences RNCP40875 Bloc 2 ↔ code du projet
 └── requirements.txt                # Dépendances
 ```
 
 ## 🔍 Technologies clés
 
-- **SentenceTransformers** : embeddings sémantiques locaux (`all-MiniLM-L6-v2`)
+- **SentenceTransformers** : embeddings sémantiques locaux (`paraphrase-multilingual-MiniLM-L12-v2`, choisi pour la diversité linguistique du corpus et de l'interface en français)
 - **scikit-learn** : similarité cosinus (vectorisée) + TF-IDF pour les mots-clés
 - **ftfy** : réparation d'encodage pendant le nettoyage du texte
 - **Flask** : framework web
