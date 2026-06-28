@@ -27,6 +27,7 @@ model = None
 embeddings = None
 df = None
 axis_embeddings = None
+title_norm_index = None
 
 # Phrases-ancres encodées une fois au démarrage pour estimer, par similarité
 # cosinus, à quel point un livre est intense sur chaque axe Likert du
@@ -40,7 +41,7 @@ AXIS_DESCRIPTORS = {
 
 def init_system():
     """Initialise le système au démarrage"""
-    global model, embeddings, df, axis_embeddings
+    global model, embeddings, df, axis_embeddings, title_norm_index
 
     print("[INIT] Chargement du système...")
 
@@ -49,7 +50,13 @@ def init_system():
     df = load_and_clean_dataset()
 
     # Charger SBERT
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    # Variante multilingue (vs all-MiniLM-L6-v2) : nécessaire car le corpus et
+    # les requêtes utilisateur ne sont pas tous en anglais (interface en
+    # français, ~5 500 livres confirmés non-anglais + langue inconnue pour
+    # 60% du corpus). all-MiniLM-L6-v2 est entraîné quasi exclusivement sur
+    # des paires anglaises et ne sait pas bien aligner une requête française
+    # avec des descriptions anglaises.
+    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
     # Charger embeddings
     if os.path.exists("embeddings_books.pkl"):
@@ -72,6 +79,10 @@ def init_system():
         axis: model.encode(text, convert_to_tensor=False)
         for axis, text in AXIS_DESCRIPTORS.items()
     }
+
+    # Index pour la vérification anti-hallucination des titres suggérés par
+    # le GenAI (cf. evaluate_genai_quality) : correspondance exacte normalisée.
+    title_norm_index = set(df['title'].astype(str).str.strip().str.lower())
 
     print(f"[OK] Système initialisé - {len(df)} livres prêts")
     return model, embeddings, df
@@ -211,6 +222,10 @@ TÂCHE (120 mots max) :
 2. 2 aspects clés couverts
 3. Suggestion de 2 livres similaires
 
+Termine impérativement ta réponse par une dernière ligne au format exact
+(utilisée pour vérifier automatiquement tes suggestions, ne pas l'omettre) :
+LIVRES_SIMILAIRES: Titre1 | Titre2
+
 Réponse concise et directe."""
         
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
@@ -252,10 +267,90 @@ Réponse concise et directe."""
         return f"[Erreur GenAI : {str(e)}]"
 
 
+def extract_suggested_titles(raw_summary):
+    """
+    Sépare la ligne structurée "LIVRES_SIMILAIRES: Titre1 | Titre2" (demandée
+    dans le prompt) du texte affiché à l'utilisateur, pour pouvoir vérifier
+    ces titres automatiquement (cf. evaluate_genai_quality).
+    """
+    match = re.search(r'LIVRES_SIMILAIRES\s*:\s*(.+)', raw_summary, re.IGNORECASE)
+    if not match:
+        return raw_summary.strip(), []
+
+    cleaned = raw_summary[:match.start()].strip()
+    titles = [t.strip() for t in match.group(1).split('|') if t.strip()]
+    return cleaned, titles
+
+
+def evaluate_genai_quality(summary_text, suggested_titles, top_book_embedding):
+    """
+    Évalue la synthèse GenAI selon 2 axes mesurables (en l'absence de "bonne
+    réponse" prédéfinie pour un texte généré) :
+    - cohérence sémantique : similarité cosinus entre l'embedding du résumé
+      et celui du livre Top 1 qu'il est censé décrire (un résumé qui dérive
+      du sujet aurait une similarité faible) ;
+    - anti-hallucination : les "livres similaires" suggérés par Gemini
+      existent-ils réellement dans le référentiel (~120k titres), par
+      correspondance exacte normalisée (minuscules, espaces nettoyés) ?
+    """
+    if not summary_text or summary_text.startswith('['):
+        return None
+
+    summary_embedding = model.encode(summary_text, convert_to_tensor=False)
+    coherence = float(
+        cosine_similarity(
+            summary_embedding.reshape(1, -1),
+            top_book_embedding.reshape(1, -1),
+        )[0][0]
+    )
+
+    verified = [t for t in suggested_titles if t.strip().lower() in title_norm_index]
+
+    return {
+        'coherence_score': round(coherence * 100, 1),
+        'suggested_titles': suggested_titles,
+        'titles_verified_count': len(verified),
+        'titles_total_count': len(suggested_titles),
+        'hallucination_rate': (
+            round((1 - len(verified) / len(suggested_titles)) * 100, 1)
+            if suggested_titles else None
+        ),
+    }
+
+
 @app.route('/')
 def index():
     """Page principale avec le formulaire"""
     return render_template('index.html')
+
+
+@app.route('/kpi')
+def kpi():
+    """
+    Dashboard KPI : qualité de séparabilité sémantique des genres (embeddings
+    SBERT), généré par analysis_improved.py (accuracy/precision/recall/F1 +
+    matrice de confusion). Ne mesure pas la pertinence des recommandations
+    elles-mêmes (pas de "bonne réponse" prédéfinie pour ça), mais la qualité
+    du signal sémantique sous-jacent.
+    """
+    import json
+
+    if not os.path.exists('kpi_results.json'):
+        return render_template('kpi.html', kpi=None)
+
+    with open('kpi_results.json', 'r', encoding='utf-8') as f:
+        kpi_data = json.load(f)
+
+    # Normalisation par ligne (= par support réel) pour la heatmap : montre
+    # la répartition des prédictions pour un genre réel donné, en %.
+    matrix = kpi_data['confusion_matrix']
+    matrix_normalized = []
+    for row in matrix:
+        total = sum(row) or 1
+        matrix_normalized.append([round(v / total * 100, 1) for v in row])
+    kpi_data['confusion_matrix_normalized'] = matrix_normalized
+
+    return render_template('kpi.html', kpi=kpi_data)
 
 
 @app.route('/recommend', methods=['POST'])
@@ -337,11 +432,18 @@ def recommend():
 
         # Générer la synthèse GenAI
         t0 = time.time()
-        summary = generate_genai_summary(preferences, recommendations, query_text)
+        raw_summary = generate_genai_summary(preferences, recommendations, query_text)
+        summary, suggested_titles = extract_suggested_titles(raw_summary)
+
+        genai_quality = None
         if summary.startswith('['):
             print(f"[GenAI] Pas de synthèse générée ({time.time() - t0:.2f}s) : {summary}")
         else:
-            print(f"[GenAI] Synthèse générée ({len(summary)} car., {time.time() - t0:.2f}s)")
+            top_idx = top_n[0][0]
+            genai_quality = evaluate_genai_quality(summary, suggested_titles, embeddings[top_idx])
+            print(f"[GenAI] Synthèse générée ({len(summary)} car., {time.time() - t0:.2f}s) - "
+                  f"cohérence={genai_quality['coherence_score']}%, "
+                  f"titres suggérés vérifiés={genai_quality['titles_verified_count']}/{genai_quality['titles_total_count']}")
 
         # Sauvegarder les préférences utilisateur (historique)
         import json
@@ -375,6 +477,7 @@ def recommend():
             'preferences': preferences,
             'recommendations': recommendations,
             'summary': summary,
+            'genai_quality': genai_quality,
             'query_text': query_text,
             'timestamp': datetime.now().isoformat()
         }
@@ -391,6 +494,7 @@ def recommend():
             'success': True,
             'recommendations': recommendations,
             'summary': summary,
+            'genai_quality': genai_quality,
             'query_text': query_text,
             'user_profile': user_profile
         })

@@ -1,0 +1,407 @@
+{
+  "generated_at": "2026-06-27T19:51:39.541551",
+  "method": "Hybride centroïde+K-NN (alpha=0.6/beta=0.4)",
+  "n_books_corpus": 110933,
+  "n_books_sampled": 5600,
+  "n_train": 4200,
+  "n_test": 1400,
+  "n_genres": 14,
+  "accuracy": 0.5007142857142857,
+  "precision_weighted": 0.48141439991506485,
+  "recall_weighted": 0.5007142857142857,
+  "f1_weighted": 0.482647675235744,
+  "genres": [
+    "arts_poetry",
+    "fantasy_scifi",
+    "fiction",
+    "history_biography",
+    "horror",
+    "humor",
+    "lifestyle",
+    "mystery_thriller",
+    "other",
+    "romance",
+    "science_academic",
+    "sequential_art",
+    "spirituality_philosophy",
+    "young_adult"
+  ],
+  "classification_report": {
+    "arts_poetry": {
+      "precision": 0.5087719298245614,
+      "recall": 0.58,
+      "f1-score": 0.5420560747663551,
+      "support": 100.0
+    },
+    "fantasy_scifi": {
+      "precision": 0.4146341463414634,
+      "recall": 0.51,
+      "f1-score": 0.45739910313901344,
+      "support": 100.0
+    },
+    "fiction": {
+      "precision": 0.2653061224489796,
+      "recall": 0.13,
+      "f1-score": 0.174496644295302,
+      "support": 100.0
+    },
+    "history_biography": {
+      "precision": 0.4953271028037383,
+      "recall": 0.53,
+      "f1-score": 0.5120772946859904,
+      "support": 100.0
+    },
+    "horror": {
+      "precision": 0.5172413793103449,
+      "recall": 0.6,
+      "f1-score": 0.5555555555555556,
+      "support": 100.0
+    },
+    "humor": {
+      "precision": 0.5698924731182796,
+      "recall": 0.53,
+      "f1-score": 0.5492227979274611,
+      "support": 100.0
+    },
+    "lifestyle": {
+      "precision": 0.6666666666666666,
+      "recall": 0.72,
+      "f1-score": 0.6923076923076923,
+      "support": 100.0
+    },
+    "mystery_thriller": {
+      "precision": 0.47107438016528924,
+      "recall": 0.57,
+      "f1-score": 0.5158371040723982,
+      "support": 100.0
+    },
+    "other": {
+      "precision": 0.1875,
+      "recall": 0.06,
+      "f1-score": 0.09090909090909091,
+      "support": 100.0
+    },
+    "romance": {
+      "precision": 0.42,
+      "recall": 0.63,
+      "f1-score": 0.504,
+      "support": 100.0
+    },
+    "science_academic": {
+      "precision": 0.5576923076923077,
+      "recall": 0.58,
+      "f1-score": 0.5686274509803921,
+      "support": 100.0
+    },
+    "sequential_art": {
+      "precision": 0.5581395348837209,
+      "recall": 0.48,
+      "f1-score": 0.5161290322580645,
+      "support": 100.0
+    },
+    "spirituality_philosophy": {
+      "precision": 0.552,
+      "recall": 0.69,
+      "f1-score": 0.6133333333333333,
+      "support": 100.0
+    },
+    "young_adult": {
+      "precision": 0.5555555555555556,
+      "recall": 0.4,
+      "f1-score": 0.46511627906976744,
+      "support": 100.0
+    },
+    "accuracy": 0.5007142857142857,
+    "macro avg": {
+      "precision": 0.48141439991506474,
+      "recall": 0.5007142857142857,
+      "f1-score": 0.482647675235744,
+      "support": 1400.0
+    },
+    "weighted avg": {
+      "precision": 0.48141439991506485,
+      "recall": 0.5007142857142857,
+      "f1-score": 0.482647675235744,
+      "support": 1400.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      58,
+      2,
+      2,
+      2,
+      1,
+      7,
+      7,
+      1,
+      2,
+      4,
+      4,
+      1,
+      8,
+      1
+    ],
+    [
+      3,
+      51,
+      2,
+      1,
+      16,
+      0,
+      0,
+      5,
+      3,
+      7,
+      0,
+      8,
+      2,
+      2
+    ],
+    [
+      9,
+      10,
+      13,
+      7,
+      4,
+      4,
+      2,
+      17,
+      4,
+      14,
+      3,
+      6,
+      3,
+      4
+    ],
+    [
+      6,
+      2,
+      6,
+      53,
+      1,
+      3,
+      1,
+      3,
+      7,
+      4,
+      4,
+      1,
+      9,
+      0
+    ],
+    [
+      3,
+      11,
+      0,
+      0,
+      60,
+      2,
+      1,
+      12,
+      0,
+      5,
+      0,
+      3,
+      1,
+      2
+    ],
+    [
+      6,
+      0,
+      2,
+      10,
+      3,
+      53,
+      5,
+      1,
+      3,
+      3,
+      5,
+      4,
+      2,
+      3
+    ],
+    [
+      3,
+      0,
+      0,
+      3,
+      0,
+      4,
+      72,
+      1,
+      0,
+      1,
+      7,
+      1,
+      6,
+      2
+    ],
+    [
+      3,
+      3,
+      6,
+      5,
+      9,
+      1,
+      0,
+      57,
+      1,
+      8,
+      0,
+      3,
+      1,
+      3
+    ],
+    [
+      9,
+      8,
+      4,
+      8,
+      3,
+      5,
+      4,
+      8,
+      6,
+      16,
+      13,
+      5,
+      8,
+      3
+    ],
+    [
+      0,
+      5,
+      6,
+      2,
+      11,
+      1,
+      0,
+      5,
+      2,
+      63,
+      0,
+      2,
+      2,
+      1
+    ],
+    [
+      2,
+      4,
+      2,
+      11,
+      0,
+      3,
+      5,
+      1,
+      2,
+      0,
+      58,
+      0,
+      7,
+      5
+    ],
+    [
+      4,
+      16,
+      2,
+      2,
+      5,
+      7,
+      1,
+      5,
+      0,
+      2,
+      0,
+      48,
+      2,
+      6
+    ],
+    [
+      5,
+      1,
+      0,
+      2,
+      0,
+      1,
+      5,
+      3,
+      1,
+      5,
+      8,
+      0,
+      69,
+      0
+    ],
+    [
+      3,
+      10,
+      4,
+      1,
+      3,
+      2,
+      5,
+      2,
+      1,
+      18,
+      2,
+      4,
+      5,
+      40
+    ]
+  ],
+  "model_comparison": [
+    {
+      "name": "Centroïde seul",
+      "accuracy": 0.49357142857142855,
+      "precision_weighted": 0.4752964420952836,
+      "recall_weighted": 0.49357142857142855,
+      "f1_weighted": 0.4790960175008474,
+      "fit_time_s": 0.0,
+      "predict_time_s": 15.332,
+      "model_size_kb": 21.8
+    },
+    {
+      "name": "K-NN seul (k=5)",
+      "accuracy": 0.4635714285714286,
+      "precision_weighted": 0.45296453435986217,
+      "recall_weighted": 0.4635714285714286,
+      "f1_weighted": 0.4515826995562525,
+      "fit_time_s": 0.0,
+      "predict_time_s": 15.332,
+      "model_size_kb": 6308.6
+    },
+    {
+      "name": "Hybride centroïde+K-NN (alpha=0.6/beta=0.4)",
+      "accuracy": 0.5007142857142857,
+      "precision_weighted": 0.48141439991506485,
+      "recall_weighted": 0.5007142857142857,
+      "f1_weighted": 0.482647675235744,
+      "fit_time_s": 0.0,
+      "predict_time_s": 15.332,
+      "model_size_kb": 6330.1
+    },
+    {
+      "name": "Régression logistique",
+      "accuracy": 0.44357142857142856,
+      "precision_weighted": 0.4391178353667577,
+      "recall_weighted": 0.44357142857142856,
+      "f1_weighted": 0.4404585194824652,
+      "fit_time_s": 0.58,
+      "predict_time_s": 0.003,
+      "model_size_kb": 43.0
+    },
+    {
+      "name": "Random Forest (100 arbres)",
+      "accuracy": 0.4635714285714286,
+      "precision_weighted": 0.44115104465231314,
+      "recall_weighted": 0.4635714285714286,
+      "f1_weighted": 0.44867277331116556,
+      "fit_time_s": 1.008,
+      "predict_time_s": 0.05,
+      "model_size_kb": 42773.3
+    }
+  ],
+  "retained_model": "Hybride centroïde+K-NN (alpha=0.6/beta=0.4)"
+}

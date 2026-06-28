@@ -137,7 +137,7 @@ def load_sbert_and_embeddings(df, embedding_path="embeddings_books.pkl"):
     """
     print("\n[EF2.2] Modélisation sémantique (SBERT)...")
     
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     
     if os.path.exists(embedding_path):
         print("[OK] Chargement des embeddings depuis le cache...")

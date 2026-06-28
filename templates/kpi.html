@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KPIs du modèle - Recommandation Littéraire</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='stack-of-books.png') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
+    <style>
+      .container {
+        max-width: 1100px;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 24px;
+        color: #525fa0;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+
+      .kpi-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 40px;
+      }
+
+      .kpi-card {
+        background: #fafbfc;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .kpi-card .value {
+        font-size: 2em;
+        font-weight: 700;
+        color: #f45f7c;
+      }
+
+      .kpi-card .label {
+        margin-top: 6px;
+        font-size: 0.85em;
+        color: #525fa0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .meta-line {
+        text-align: center;
+        color: #525fa0;
+        font-size: 0.85em;
+        margin-bottom: 40px;
+      }
+
+      .explain {
+        background: rgba(133, 145, 195, 0.08);
+        border-left: 4px solid #8591c3;
+        padding: 16px 18px;
+        border-radius: 12px;
+        margin-bottom: 40px;
+        font-size: 0.92em;
+        color: #2d3748;
+        line-height: 1.5;
+      }
+
+      .table-scroll {
+        overflow-x: auto;
+        margin-bottom: 40px;
+      }
+
+      table.report,
+      table.heatmap {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85em;
+      }
+
+      table.report th,
+      table.report td,
+      table.heatmap th,
+      table.heatmap td {
+        padding: 8px 10px;
+        text-align: center;
+        border: 1px solid #e8eaf0;
+        white-space: nowrap;
+      }
+
+      table.report th {
+        background: #525fa0;
+        color: white;
+        font-weight: 600;
+      }
+
+      table.report tr:nth-child(even) {
+        background: #fafbfc;
+      }
+
+      table.heatmap th {
+        background: #fafbfc;
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 0.8em;
+      }
+
+      table.heatmap td {
+        color: #2d3748;
+        font-weight: 600;
+      }
+
+      table.heatmap .row-label {
+        text-align: right;
+        background: #fafbfc;
+        font-weight: 600;
+      }
+
+      .empty-state {
+        text-align: center;
+        color: #525fa0;
+        padding: 40px 20px;
+      }
+
+      .empty-state code {
+        background: #fafbfc;
+        border: 1px solid #e8eaf0;
+        border-radius: 6px;
+        padding: 2px 8px;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      table.comparison {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.85em;
+      }
+
+      table.comparison th,
+      table.comparison td {
+        padding: 8px 10px;
+        text-align: center;
+        border: 1px solid #e8eaf0;
+        white-space: nowrap;
+      }
+
+      table.comparison th {
+        background: #525fa0;
+        color: white;
+        font-weight: 600;
+      }
+
+      table.comparison tr.retained {
+        background: rgba(244, 95, 124, 0.12);
+        font-weight: 700;
+      }
+
+      .retained-badge {
+        display: inline-block;
+        background: #f45f7c;
+        color: white;
+        font-size: 0.7em;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+
+      .drilldown-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+
+      .drilldown-controls select {
+        padding: 8px 12px;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 8px;
+        font-size: 0.9em;
+        font-family: inherit;
+      }
+
+      .drilldown-panel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .drilldown-panel .stat {
+        background: #fafbfc;
+        border: 1.5px solid #e8eaf0;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .drilldown-panel .stat .num {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #f45f7c;
+      }
+
+      .drilldown-panel .stat .lbl {
+        font-size: 0.75em;
+        color: #525fa0;
+        font-weight: 600;
+      }
+
+      table.heatmap td.hl-row,
+      table.heatmap th.hl-row,
+      table.heatmap th.hl-col,
+      table.heatmap td.hl-col {
+        box-shadow: inset 0 0 0 2px #2d3748;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a class="back-link" href="{{ url_for('index') }}">← Retour au questionnaire</a>
+      <h1>
+        <img class="logo" src="{{ url_for('static', filename='stack-of-books.png') }}" alt="Logo" />
+        KPIs du modèle
+      </h1>
+      <p class="subtitle">
+        Séparabilité sémantique des genres - mesure de la qualité des embeddings SBERT
+      </p>
+
+      {% if kpi is none %}
+      <div class="empty-state">
+        <p>Aucun résultat disponible pour le moment.</p>
+        <p>Lancez <code>python analysis_improved.py</code> pour générer <code>kpi_results.json</code>.</p>
+      </div>
+      {% else %}
+      <div class="explain">
+        Le moteur de recommandation restitue un Top 5 par similarité, sans
+        "bonne réponse" prédéfinie pour mesurer une précision directe. Le KPI
+        retenu mesure donc une question complémentaire et vérifiable : <strong>les
+        embeddings SBERT capturent-ils assez de signal sémantique pour deviner
+        le genre macro d'un livre à partir de son titre + sa description
+        seuls ?</strong> Une bonne séparabilité des genres est un prérequis pour des
+        recommandations sémantiquement cohérentes. Méthode : classification
+        hybride centroïde + K-NN (k=5) sur les embeddings, évaluée par
+        accuracy/precision/recall/F1 pondérés et matrice de confusion
+        (genre prédit vs genre réel) sur un échantillon stratifié, avec
+        split train/test pour éviter toute fuite de données.
+      </div>
+
+      <div class="kpi-cards">
+        <div class="kpi-card">
+          <div class="value">{{ "%.1f"|format(kpi.accuracy * 100) }}%</div>
+          <div class="label">Accuracy</div>
+        </div>
+        <div class="kpi-card">
+          <div class="value">{{ "%.1f"|format(kpi.precision_weighted * 100) }}%</div>
+          <div class="label">Précision pondérée</div>
+        </div>
+        <div class="kpi-card">
+          <div class="value">{{ "%.1f"|format(kpi.recall_weighted * 100) }}%</div>
+          <div class="label">Rappel pondéré</div>
+        </div>
+        <div class="kpi-card">
+          <div class="value">{{ "%.1f"|format(kpi.f1_weighted * 100) }}%</div>
+          <div class="label">F1-Score pondéré</div>
+        </div>
+      </div>
+
+      <p class="meta-line">
+        Méthode : {{ kpi.method }} &middot;
+        {{ kpi.n_books_sampled }} livres échantillonnés sur {{ kpi.n_books_corpus }}
+        ({{ kpi.n_train }} train / {{ kpi.n_test }} test) &middot;
+        {{ kpi.n_genres }} genres &middot;
+        généré le {{ kpi.generated_at[:10] }}
+      </p>
+
+      <div class="section-title">Comparaison de modèles (accuracy/F1 vs coût de calcul)</div>
+      <div class="explain">
+        Cinq approches testées sur le même split train/test, pour vérifier si
+        un modèle plus coûteux (à entraîner, à stocker, à exécuter) apporte un
+        gain de précision qui le justifie — angle "écoresponsabilité" (C4.3) :
+        un meilleur F1 ne suffit pas si son coût de stockage/calcul est
+        disproportionné par rapport au gain.
+      </div>
+      <div class="table-scroll">
+        <table class="comparison">
+          <caption class="sr-only">Comparaison des 5 modèles testés : précision, rappel, F1, temps et taille mémoire</caption>
+          <thead>
+            <tr>
+              <th scope="col">Modèle</th>
+              <th scope="col">Accuracy</th>
+              <th scope="col">F1 pondéré</th>
+              <th scope="col">Temps entraînement</th>
+              <th scope="col">Temps prédiction</th>
+              <th scope="col">Taille mémoire</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in kpi.model_comparison %}
+            <tr class="{{ 'retained' if m.name == kpi.retained_model else '' }}">
+              <td>
+                {{ m.name }}
+                {% if m.name == kpi.retained_model %}<span class="retained-badge">RETENU</span>{% endif %}
+              </td>
+              <td>{{ "%.1f"|format(m.accuracy * 100) }}%</td>
+              <td>{{ "%.1f"|format(m.f1_weighted * 100) }}%</td>
+              <td>{{ m.fit_time_s }}s</td>
+              <td>{{ m.predict_time_s }}s</td>
+              <td>
+                {% if m.model_size_kb > 1024 %}
+                  {{ "%.1f"|format(m.model_size_kb / 1024) }} Mo
+                {% else %}
+                  {{ m.model_size_kb }} Ko
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-title">Précision / rappel / F1 par genre</div>
+      <div class="table-scroll">
+        <table class="report">
+          <caption class="sr-only">Précision, rappel, F1-score et support par genre, pour le modèle retenu</caption>
+          <thead>
+            <tr>
+              <th scope="col">Genre</th>
+              <th scope="col">Précision</th>
+              <th scope="col">Rappel</th>
+              <th scope="col">F1-score</th>
+              <th scope="col">Support</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for genre in kpi.genres %}
+            <tr>
+              <td>{{ genre.replace("_", " ") }}</td>
+              <td>{{ "%.1f"|format(kpi.classification_report[genre]["precision"] * 100) }}%</td>
+              <td>{{ "%.1f"|format(kpi.classification_report[genre]["recall"] * 100) }}%</td>
+              <td>{{ "%.1f"|format(kpi.classification_report[genre]["f1-score"] * 100) }}%</td>
+              <td>{{ kpi.classification_report[genre]["support"] | int }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-title">Matrice de confusion (genre réel x genre prédit, en %)</div>
+
+      <div class="drilldown-controls">
+        <label for="genreFilter">🔎 Explorer un genre (TP/FP/FN/TN dérivés de la matrice) :</label>
+        <select id="genreFilter" aria-describedby="drilldownPanel">
+          <option value="">— Choisir un genre —</option>
+          {% for g in kpi.genres %}
+          <option value="{{ loop.index0 }}">{{ g.replace("_", " ") }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="drilldown-panel" id="drilldownPanel" style="display: none">
+        <div class="stat"><div class="num" id="statTP">0</div><div class="lbl">Vrais positifs</div></div>
+        <div class="stat"><div class="num" id="statFP">0</div><div class="lbl">Faux positifs</div></div>
+        <div class="stat"><div class="num" id="statFN">0</div><div class="lbl">Faux négatifs</div></div>
+        <div class="stat"><div class="num" id="statTN">0</div><div class="lbl">Vrais négatifs</div></div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="heatmap" id="heatmapTable">
+          <caption class="sr-only">Matrice de confusion : pour chaque genre réel (ligne), pourcentage de livres prédits dans chaque genre (colonne)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Réel \ Prédit</th>
+              {% for g in kpi.genres %}
+              <th scope="col" data-col="{{ loop.index0 }}">{{ g.replace("_", " ") }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row_genre in kpi.genres %}
+            {% set row_index = loop.index0 %}
+            <tr>
+              <th scope="row" class="row-label" data-row="{{ row_index }}">{{ row_genre.replace("_", " ") }}</th>
+              {% for value in kpi.confusion_matrix_normalized[row_index] %}
+              <td
+                data-row="{{ row_index }}"
+                data-col="{{ loop.index0 }}"
+                style="background: rgba(244, 95, 124, {{ (value / 100) | round(2) }})"
+              >
+                {{ value }}%
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <script>
+        const confusionMatrix = {{ kpi.confusion_matrix | tojson }};
+        const genreNames = {{ kpi.genres | tojson }};
+
+        document.getElementById("genreFilter").addEventListener("change", (e) => {
+          document
+            .querySelectorAll("#heatmapTable [data-row], #heatmapTable [data-col]")
+            .forEach((el) => el.classList.remove("hl-row", "hl-col"));
+
+          const panel = document.getElementById("drilldownPanel");
+          const i = e.target.value;
+          if (i === "") {
+            panel.style.display = "none";
+            return;
+          }
+          const idx = parseInt(i, 10);
+
+          document
+            .querySelectorAll(`#heatmapTable [data-row="${idx}"]`)
+            .forEach((el) => el.classList.add("hl-row"));
+          document
+            .querySelectorAll(`#heatmapTable [data-col="${idx}"]`)
+            .forEach((el) => el.classList.add("hl-col"));
+
+          // TP/FP/FN/TN dérivés de la matrice multi-classe en transformant le
+          // genre choisi en problème binaire "ce genre vs tous les autres".
+          const n = genreNames.length;
+          let total = 0;
+          for (let r = 0; r < n; r++) {
+            for (let c = 0; c < n; c++) total += confusionMatrix[r][c];
+          }
+          const rowSum = confusionMatrix[idx].reduce((a, b) => a + b, 0);
+          const colSum = genreNames.reduce((sum, _, r) => sum + confusionMatrix[r][idx], 0);
+          const tp = confusionMatrix[idx][idx];
+          const fn = rowSum - tp;
+          const fp = colSum - tp;
+          const tn = total - rowSum - colSum + tp;
+
+          document.getElementById("statTP").textContent = tp;
+          document.getElementById("statFP").textContent = fp;
+          document.getElementById("statFN").textContent = fn;
+          document.getElementById("statTN").textContent = tn;
+          panel.style.display = "grid";
+        });
+      </script>
+      {% endif %}
+    </div>
+  </body>
+</html>
